@@ -27,6 +27,9 @@ public class PrimaryController {
     private TextField ageTextField;
 
     @FXML
+    private TextField phoneNumberTextField;
+
+    @FXML
     private TextField nameTextField;
 
     @FXML
@@ -80,40 +83,35 @@ public class PrimaryController {
     private void switchToSecondary() throws IOException {
         DemoApp.setRoot("secondary");
     }
-    public boolean readFirebase()
-    {
+    public boolean readFirebase() {
+        outputTextArea.clear();
         key = false;
 
-        //asynchronously retrieve all documents
-        ApiFuture<QuerySnapshot> future =  DemoApp.fstore.collection("Persons").get();
-        // future.get() blocks on response
-        List<QueryDocumentSnapshot> documents;
-        try
-        {
-            documents = future.get().getDocuments();
-            if(documents.size()>0)
-            {
-                System.out.println("Getting (reading) data from firabase database....");
+        // Asynchronously retrieve all documents
+        ApiFuture<QuerySnapshot> future = DemoApp.fstore.collection("Person").get();
+
+        try {
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            if (documents.size() > 0) {
+                System.out.println("Getting (reading) data from firebase database....");
                 listOfUsers.clear();
-                for (QueryDocumentSnapshot document : documents)
-                {
-                    outputTextArea.setText(outputTextArea.getText()+ document.getData().get("Name")+ " , Age: "+
-                            document.getData().get("Age")+ " \n ");
-                    System.out.println(document.getId() + " => " + document.getData().get("Name"));
-                    person  = new Person(String.valueOf(document.getData().get("Name")),
-                            Integer.parseInt(document.getData().get("Age").toString()));
+                for (QueryDocumentSnapshot document : documents) {
+                    String name = String.valueOf(document.getData().get("Name"));
+                    int age = Integer.parseInt(document.getData().get("Age").toString());
+                    String phoneNumber = String.valueOf(document.getData().get("Phone number")); // Get phone number
+
+                    outputTextArea.setText(outputTextArea.getText() + name + " , Age: " + age + ", Phone number: " + phoneNumber + "\n");
+
+                    System.out.println(document.getId() + " => " + name);
+                    Person person = new Person(name, age, phoneNumber); // Create Person object with phone number
                     listOfUsers.add(person);
                 }
-            }
-            else
-            {
+            } else {
                 System.out.println("No data");
             }
-            key=true;
+            key = true;
 
-        }
-        catch (InterruptedException | ExecutionException ex)
-        {
+        } catch (InterruptedException | ExecutionException | NumberFormatException ex) {
             ex.printStackTrace();
         }
         return key;
@@ -145,13 +143,18 @@ public class PrimaryController {
 
     public void addData() {
 
-        DocumentReference docRef = DemoApp.fstore.collection("Persons").document(UUID.randomUUID().toString());
+        DocumentReference docRef = DemoApp.fstore.collection("Person").document(UUID.randomUUID().toString());
 
         Map<String, Object> data = new HashMap<>();
         data.put("Name", nameTextField.getText());
-        data.put("Age", Integer.parseInt(ageTextField.getText()));
+        data.put("Age", ageTextField.getText());
+        data.put("Phone number", phoneNumberTextField.getText());
 
         //asynchronously write data
         ApiFuture<WriteResult> result = docRef.set(data);
+        nameTextField.clear();
+        ageTextField.clear();
+        phoneNumberTextField.clear();
+        System.out.println("Wrote to the database");
     }
 }
